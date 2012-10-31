@@ -1936,7 +1936,7 @@ CONFIG_USB_EHCI_MSM=y
 #
 # also be needed; see USB_STORAGE Help for more info
 #
-# CONFIG_USB_STORAGE is not set
+CONFIG_USB_STORAGE=y
 # CONFIG_USB_LIBUSUAL is not set
 
 #
@@ -2279,7 +2279,7 @@ CONFIG_INOTIFY_USER=y
 # CONFIG_QUOTA is not set
 # CONFIG_AUTOFS_FS is not set
 # CONFIG_AUTOFS4_FS is not set
-# CONFIG_FUSE_FS is not set
+CONFIG_FUSE_FS=m
 
 #
 # Caches
