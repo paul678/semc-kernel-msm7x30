@@ -37,7 +37,18 @@
 #include <linux/notifier.h>
 #include <linux/compaction.h>
 
+<<<<<<< HEAD
 static uint32_t lowmem_debug_level = 2;
+=======
+#define SEC_ADJUST_LMK
+
+#ifdef CONFIG_SWAP
+#include <linux/fs.h>
+#include <linux/swap.h>
+#endif
+
+static uint32_t lowmem_debug_level = 1;
+>>>>>>> 52f214b... LMK: Reduce debugging level
 static int lowmem_adj[6] = {
 	0,
 	1,
