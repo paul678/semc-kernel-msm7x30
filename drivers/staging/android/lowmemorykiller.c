@@ -35,20 +35,8 @@
 #include <linux/oom.h>
 #include <linux/sched.h>
 #include <linux/notifier.h>
-#include <linux/compaction.h>
 
-<<<<<<< HEAD
 static uint32_t lowmem_debug_level = 2;
-=======
-#define SEC_ADJUST_LMK
-
-#ifdef CONFIG_SWAP
-#include <linux/fs.h>
-#include <linux/swap.h>
-#endif
-
-static uint32_t lowmem_debug_level = 1;
->>>>>>> 52f214b... LMK: Reduce debugging level
 static int lowmem_adj[6] = {
 	0,
 	1,
@@ -66,14 +54,6 @@ static int lowmem_minfree_size = 4;
 
 static struct task_struct *lowmem_deathpending;
 static unsigned long lowmem_deathpending_timeout;
-<<<<<<< HEAD
-=======
-#ifdef CONFIG_SWAP
-static int fudgeswap = 0;
-#endif
->>>>>>> acdf11b... LMK: Don't count reserved memory
-
-extern int compact_nodes();
 
 #define lowmem_print(level, x...)			\
 	do {						\
@@ -93,10 +73,9 @@ task_notify_func(struct notifier_block *self, unsigned long val, void *data)
 {
 	struct task_struct *task = data;
 
-	if (task == lowmem_deathpending) {
+	if (task == lowmem_deathpending)
 		lowmem_deathpending = NULL;
-        task_free_unregister(&task_nb);
-    }
+
 	return NOTIFY_OK;
 }
 
@@ -111,15 +90,7 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 	int selected_tasksize = 0;
 	int selected_oom_adj;
 	int array_size = ARRAY_SIZE(lowmem_adj);
-<<<<<<< HEAD
 	int other_free = global_page_state(NR_FREE_PAGES);
-=======
-	int other_free = global_page_state(NR_FREE_PAGES) - totalreserve_pages;
-#ifdef SEC_ADJUST_LMK
-	int other_file = global_page_state(NR_INACTIVE_FILE) +
-						global_page_state(NR_ACTIVE_FILE);
-#else
->>>>>>> acdf11b... LMK: Don't count reserved memory
 	int other_file = global_page_state(NR_FILE_PAGES) -
 						global_page_state(NR_SHMEM);
 
@@ -201,15 +172,12 @@ static int lowmem_shrink(int nr_to_scan, gfp_t gfp_mask)
 			     selected_oom_adj, selected_tasksize);
 		lowmem_deathpending = selected;
 		lowmem_deathpending_timeout = jiffies + HZ;
-        task_free_register(&task_nb);
 		force_sig(SIGKILL, selected);
 		rem -= selected_tasksize;
 	}
 	lowmem_print(4, "lowmem_shrink %d, %x, return %d\n",
 		     nr_to_scan, gfp_mask, rem);
 	read_unlock(&tasklist_lock);
-    if (selected)
-        compact_nodes();
 	return rem;
 }
 
