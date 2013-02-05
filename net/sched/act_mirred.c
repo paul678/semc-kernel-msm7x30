@@ -205,7 +205,7 @@ static int tcf_mirred_dump(struct sk_buff *skb, struct tc_action *a, int bind, i
 {
 	unsigned char *b = skb_tail_pointer(skb);
 	struct tcf_mirred *m = a->priv;
-	struct tc_mirred opt;
+	struct tc_mirred opt = {
 	  .index   = m->tcf_index,
 	  .action  = m->tcf_action,
 	  .refcnt  = m->tcf_refcnt - ref,
