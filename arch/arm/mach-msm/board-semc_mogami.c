@@ -179,7 +179,10 @@
 #define MSM_RAM_CONSOLE_SIZE    (128 * SZ_1K)
 #endif
 
-#define MSM_PMEM_SF_SIZE	0x1E00000
+/* 720p Recording */
+//#define MSM_PMEM_SF_SIZE	0x1E00000
+/* 480p Recording */
+#define MSM_PMEM_SF_SIZE	0x1C00000
 
 #ifdef CONFIG_FB_MSM_HDMI_SII9024A_PANEL
 #define MSM_HDMI_SIZE           0x30000
@@ -194,7 +197,10 @@
 #endif /*CONFIG_FB_MSM_TRIPLE_BUFFER*/
 
 #define MSM_PMEM_CAMERA_SIZE    0x0000000
-#define MSM_PMEM_ADSP_SIZE      0x2F00000
+/* 720p Recording */
+//#define MSM_PMEM_ADSP_SIZE      0x2F00000
+/* 480p Recording */
+#define MSM_PMEM_ADSP_SIZE      0x1B00000
 #define PMEM_KERNEL_EBI1_SIZE   0x600000
 
 #define PMIC_GPIO_INT		27
