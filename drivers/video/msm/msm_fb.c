@@ -285,7 +285,7 @@ static int msm_fb_probe(struct platform_device *pdev)
 		fbram_size =
 			pdev->resource[0].end - pdev->resource[0].start + 1;
 		fbram_phys = (char *)pdev->resource[0].start;
-		fbram = ioremap((unsigned long)fbram_phys, fbram_size);
+		fbram = __va(fbram_phys);
 
 		if (!fbram) {
 			printk(KERN_ERR "fbram ioremap failed!\n");
@@ -419,7 +419,7 @@ static int msm_fb_suspend(struct platform_device *pdev, pm_message_t state)
 	if ((!mfd) || (mfd->key != MFD_KEY))
 		return 0;
 
-	acquire_console_sem();
+	console_lock();
 	fb_set_suspend(mfd->fbi, FBINFO_STATE_SUSPENDED);
 
 	ret = msm_fb_suspend_sub(mfd);
@@ -430,7 +430,7 @@ static int msm_fb_suspend(struct platform_device *pdev, pm_message_t state)
 		pdev->dev.power.power_state = state;
 	}
 
-	release_console_sem();
+	console_unlock();
 	return ret;
 }
 #else
@@ -531,11 +531,11 @@ static int msm_fb_resume(struct platform_device *pdev)
 	if ((!mfd) || (mfd->key != MFD_KEY))
 		return 0;
 
-	acquire_console_sem();
+	console_lock();
 	ret = msm_fb_resume_sub(mfd);
 	pdev->dev.power.power_state = PMSG_ON;
 	fb_set_suspend(mfd->fbi, FBINFO_STATE_RUNNING);
-	release_console_sem();
+	console_unlock();
 
 	return ret;
 }
@@ -675,6 +675,11 @@ static int msm_fb_blank_sub(int blank_mode, struct fb_info *info,
 
 			msleep(16);
 			ret = pdata->off(mfd->pdev);
+
+			/* clean fb to prevent displaying old fb */
+			memset((void *)info->screen_base, 0,
+				info->fix.smem_len);
+
 			if (ret)
 				mfd->panel_power_on = curr_pwr_state;
 
@@ -1036,7 +1041,7 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 		break;
 
 	default:
-		MSM_FB_ERR("msm_fb_init: fb %d unkown image type!\n",
+		MSM_FB_ERR("msm_fb_init: fb %d unknown image type!\n",
 			   mfd->index);
 		return ret;
 	}
@@ -1166,7 +1171,7 @@ static int msm_fb_register(struct msm_fb_data_type *mfd)
 	mfd->pan_waiting = FALSE;
 	init_completion(&mfd->pan_comp);
 	init_completion(&mfd->refresher_comp);
-	init_MUTEX(&mfd->sem);
+	sema_init(&mfd->sem, 1);
 
 	fbram_offset = PAGE_ALIGN((int)fbram)-(int)fbram;
 	fbram += fbram_offset;
@@ -2467,9 +2472,9 @@ static void msm_fb_ensure_memory_coherency_after_dma(struct fb_info *info,
 /*
  * NOTE: The userspace issues blit operations in a sequence, the sequence
  * start with a operation marked START and ends in an operation marked
- * END. It is guranteed by the userspace that all the blit operations
+ * END. It is guaranteed by the userspace that all the blit operations
  * between START and END are only within the regions of areas designated
- * by the START and END operations and that the userspace doesnt modify
+ * by the START and END operations and that the userspace doesn't modify
  * those areas. Hence it would be enough to perform barrier/cache operations
  * only on the START and END operations.
  */
