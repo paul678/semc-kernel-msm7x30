@@ -843,7 +843,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	 * actually gets the semaphore or not.
 	 */
 	if (acquire_console_semaphore_for_printk(this_cpu))
-		release_console_sem();
+		console_unlock();
 
 	lockdep_on();
 out_restore_irqs:
@@ -1004,7 +1004,7 @@ void suspend_console(void)
 	if (!console_suspend_enabled)
 		return;
 	printk("Suspending console(s) (use no_console_suspend to debug)\n");
-	acquire_console_sem();
+	console_lock1();
 	console_suspended = 1;
 	up(&console_sem);
 }
@@ -1015,8 +1015,98 @@ void resume_console(void)
 		return;
 	down(&console_sem);
 	console_suspended = 0;
-	release_console_sem();
+	console_unlock();
 }
+
+/**
+ * console_lock1 - lock the console system for exclusive use.
+ *
+ * Acquires a lock which guarantees that the caller has
+ * exclusive access to the console system and the console_drivers list.
+ *
+ * Can sleep, returns nothing.
+ */
+void console_lock1(void)
+{
+        BUG_ON(in_interrupt());
+        down(&console_sem);
+        if (console_suspended)
+                return;
+        console_locked = 1;
+        console_may_schedule = 1;
+}
+EXPORT_SYMBOL(console_lock1);
+
+/**
+ * console_trylock - try to lock the console system for exclusive use.
+ *
+ * Tried to acquire a lock which guarantees that the caller has
+ * exclusive access to the console system and the console_drivers list.
+ *
+ * returns 1 on success, and 0 on failure to acquire the lock.
+ */
+int console_trylock(void)
+{
+        if (down_trylock(&console_sem))
+                return 0;
+        if (console_suspended) {
+                up(&console_sem);
+                return 0;
+        }
+        console_locked = 1;
+        console_may_schedule = 0;
+        return 1;
+}
+EXPORT_SYMBOL(console_trylock);
+
+/**
+ * console_unlock - unlock the console system
+ *
+ * Releases the console_lock which the caller holds on the console system
+ * and the console driver list.
+ *
+ * While the console_lock was held, console output may have been buffered
+ * by printk().  If this is the case, console_unlock(); emits
+ * the output prior to releasing the lock.
+ *
+ * If there is output waiting for klogd, we wake it up.
+ *
+ * console_unlock(); may be called from any context.
+ */
+void console_unlock(void)
+{
+        unsigned long flags;
+        unsigned _con_start, _log_end;
+        unsigned wake_klogd = 0;
+
+        if (console_suspended) {
+                up(&console_sem);
+                return;
+        }
+
+        console_may_schedule = 0;
+ 
+        for ( ; ; ) {
+                spin_lock_irqsave(&logbuf_lock, flags);
+                wake_klogd |= log_start - log_end;
+                if (con_start == log_end)
+                        break;                  /* Nothing to print */
+                _con_start = con_start;
+                _log_end = log_end;
+                con_start = log_end;            /* Flush */
+                spin_unlock(&logbuf_lock);
+                stop_critical_timings();        /* don't trace print latency */
+                call_console_drivers(_con_start, _log_end);
+                start_critical_timings();
+                local_irq_restore(flags);
+        }
+        console_locked = 0;
+        up(&console_sem);
+        spin_unlock_irqrestore(&logbuf_lock, flags);
+        if (wake_klogd)
+                wake_up_klogd();
+}
+EXPORT_SYMBOL(console_unlock);
 
 /**
  * acquire_console_sem - lock the console system for exclusive use.
@@ -1154,14 +1244,14 @@ void console_unblank(void)
 		if (down_trylock(&console_sem) != 0)
 			return;
 	} else
-		acquire_console_sem();
+		console_lock1();
 
 	console_locked = 1;
 	console_may_schedule = 0;
 	for_each_console(c)
 		if ((c->flags & CON_ENABLED) && c->unblank)
 			c->unblank();
-	release_console_sem();
+	console_unlock();
 }
 
 /*
@@ -1172,7 +1262,7 @@ struct tty_driver *console_device(int *index)
 	struct console *c;
 	struct tty_driver *driver = NULL;
 
-	acquire_console_sem();
+	console_lock1();
 	for_each_console(c) {
 		if (!c->device)
 			continue;
@@ -1180,7 +1270,7 @@ struct tty_driver *console_device(int *index)
 		if (driver)
 			break;
 	}
-	release_console_sem();
+	console_unlock();
 	return driver;
 }
 
@@ -1191,9 +1281,9 @@ struct tty_driver *console_device(int *index)
  */
 void console_stop(struct console *console)
 {
-	acquire_console_sem();
+	console_lock1();
 	console->flags &= ~CON_ENABLED;
-	release_console_sem();
+	console_unlock();
 }
 EXPORT_SYMBOL(console_stop);
 
@@ -1208,9 +1298,9 @@ void console_start(struct console *console)
 	if (console_value == 0)
 		return;
 #endif
-	acquire_console_sem();
+	console_lock1();
 	console->flags |= CON_ENABLED;
-	release_console_sem();
+	console_unlock();
 }
 EXPORT_SYMBOL(console_start);
 
@@ -1332,7 +1422,7 @@ void register_console(struct console *newcon)
 	 *	Put this console in the list - keep the
 	 *	preferred driver at the head of the list.
 	 */
-	acquire_console_sem();
+	console_lock1();
 	if ((newcon->flags & CON_CONSDEV) || console_drivers == NULL) {
 		newcon->next = console_drivers;
 		console_drivers = newcon;
@@ -1351,7 +1441,7 @@ void register_console(struct console *newcon)
 		con_start = log_start;
 		spin_unlock_irqrestore(&logbuf_lock, flags);
 	}
-	release_console_sem();
+	console_unlock();
 
 	/*
 	 * By unregistering the bootconsoles after we enable the real console
@@ -1387,7 +1477,7 @@ int unregister_console(struct console *console)
 		return braille_unregister_console(console);
 #endif
 
-	acquire_console_sem();
+	console_lock1();
 	if (console_drivers == console) {
 		console_drivers=console->next;
 		res = 0;
@@ -1409,7 +1499,7 @@ int unregister_console(struct console *console)
 	if (console_drivers != NULL && console->flags & CON_CONSDEV)
 		console_drivers->flags |= CON_CONSDEV;
 
-	release_console_sem();
+	console_unlock();
 	return res;
 }
 EXPORT_SYMBOL(unregister_console);
