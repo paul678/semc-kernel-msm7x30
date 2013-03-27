@@ -118,23 +118,23 @@ static struct clkctl_acpu_speed acpu_freq_tbl[] = {
 	{ 249600, PLL_3,    5, 2,  61440000,  900, VDD_RAW(900) },
 	{ 364800, PLL_3,    5, 1,  122800000, 900, VDD_RAW(900) },
 	/* AXI has MSMC1 implications. See above. */
-	{ 460800, PLL_1,    2, 0,  153600000, 950, VDD_RAW(950) },
-	{ 576000, PLL_1,    2, 0,  153600000, 1000, VDD_RAW(1000) },
-	{ 652800, PLL_1,    2, 0,  153600000, 1050, VDD_RAW(1050) },
-	{ 768000, PLL_1,    2, 0,  153600000, 1050, VDD_RAW(1050) },
+	{ 460800, PLL_1,    2, 0,  153600000, 925, VDD_RAW(900) },
+	{ 576000, PLL_1,    2, 0,  153600000, 950, VDD_RAW(950) },
+	{ 652800, PLL_1,    2, 0,  153600000, 1000, VDD_RAW(1000) },
+	{ 768000, PLL_1,    2, 0,  153600000, 1000, VDD_RAW(1025) },
 	/*
 	 * AXI has MSMC1 implications. See above.
 	 * 806.4MHz is increased to match the SoC's capabilities at runtime
 	 */
 	{ 806400, PLL_2,    3, 0,  UINT_MAX, 1100, VDD_RAW(1100) },
-	{ 921600, PLL_2,    3, 0,  UINT_MAX, 1150, VDD_RAW(1150) },
-	{ 1017600, PLL_2,   3, 0,  UINT_MAX, 1200, VDD_RAW(1200) },
-	{ 1113600, PLL_2,   3, 0,  UINT_MAX, 1200, VDD_RAW(1200) },
-	{ 1209600, PLL_2,   3, 0,  UINT_MAX, 1200, VDD_RAW(1200) },
-	{ 1305600, PLL_2,   3, 0,  UINT_MAX, 1250, VDD_RAW(1250) },
-	{ 1401600, PLL_2,   3, 0,  UINT_MAX, 1250, VDD_RAW(1250) },
+	{ 921600, PLL_2,    3, 0,  UINT_MAX, 1125, VDD_RAW(1125) },
+	{ 1017600, PLL_2,   3, 0,  UINT_MAX, 1150, VDD_RAW(1150) },
+	{ 1113600, PLL_2,   3, 0,  UINT_MAX, 1150, VDD_RAW(1150) },
+	{ 1209600, PLL_2,   3, 0,  UINT_MAX, 1175, VDD_RAW(1175) },
+	{ 1305600, PLL_2,   3, 0,  UINT_MAX, 1200, VDD_RAW(1200) },
+	{ 1401600, PLL_2,   3, 0,  UINT_MAX, 1225, VDD_RAW(1225) },
 	{ 1516800, PLL_2,   3, 0,  UINT_MAX, 1300, VDD_RAW(1300) },
-	{ 1612800, PLL_2,   3, 0,  UINT_MAX, 1300, VDD_RAW(1300) },
+	{ 1612800, PLL_2,   3, 0,  UINT_MAX, 1300, VDD_RAW(1350) },
 	{ 0 }
 };
 
